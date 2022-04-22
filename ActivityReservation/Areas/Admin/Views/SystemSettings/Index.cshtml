@@ -1,0 +1,88 @@
+﻿@{
+    ViewBag.Title = "系统设置管理";
+}
+<div class="table-wraper">
+    <div class="table-header">
+        <h3 class="table-title">系统设置管理</h3>
+        <div class="form-inline" style="margin: 0.6em 0">
+            <button asp-access id="btnReloadConfig" type="button" class="btn btn-success">Reload Configuration</button>
+        </div>
+    </div>
+    <div class="table-body" id="div_main"></div>
+</div>
+@section scripts{
+    <script>
+        var pageSize = 10, pageIndex = 1;
+        
+        // reload configuration
+        $("#btnReloadConfig").on("click", function () {
+            $.post("/Admin/SystemSettings/ReloadConfiguration", function (data,textStatus, xhr) {
+                if (xhr.status == 200) {
+                    layer.msg("updated");
+                } else {
+                    layer.msg("failed to reload");
+                }
+            });
+        });
+
+        //加载数据
+        function loadData(pIndex) {
+            if (!pIndex) {
+                pageIndex = 1;
+            } else {
+                pageIndex = pIndex;
+            }
+            $("#div_main").html('<br /><img src="/images/loading.gif" /> 正在玩命加载中，请稍后...');
+            $.ajax({
+                url: "/Admin/SystemSettings/List",
+                data: {
+                    "PageIndex": pageIndex,
+                    "PageSize": pageSize
+                },
+                success: function (data, status) {
+                    if (status == "success") {
+                        $("#div_main").html(data);
+                    } else {
+                        $("#div_main").html('');
+                        layer.msg('数据加载异常，请稍后重试！');
+                    }
+                }
+            });
+        }
+
+        //更新
+        function Update(id, settingName, obj) {
+            if (id) {
+                $(obj).attr("disabled", "disabled");
+                var beforeVal = $.trim($(obj).parent().prev().text());
+                //layer.propmt
+                layer.prompt({
+                    title: '请输入新的值',
+                    value: beforeVal,
+                    formType: 0 //prompt风格，支持0-2
+                },
+                    function (param) {
+                        if (param) {
+                            $.post("/Admin/SystemSettings/UpdateSettings",
+                                { "SettingId": id, "SettingName": settingName, "SettingValue": param },
+                                function (data) {
+                                    if (data) {
+                                        layer.msg('更新成功');
+                                        location.reload();
+                                    } else {
+                                        layer.msg("更新失败，请稍后重试！");
+                                    }
+                                });
+                        }
+                    });
+                $(obj).removeAttr("disabled");
+            } else {
+                layer.msg("参数异常，更新状态失败");
+            }
+        }
+
+        $(function () {
+            loadData();
+        });
+    </script>
+}
